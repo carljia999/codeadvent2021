@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/thoas/go-funk"
 )
 
 type Cell struct {
@@ -33,29 +35,29 @@ func BuildBoards(f io.Reader) ([]int, []Board) {
 	// empty line
 	scanner.Scan()
 
-	var boards []Board
-	var currBoard Board
+	// read all non-empty lines
+	lines := []string{}
 	for scanner.Scan() {
 		line := scanner.Text()
-		if len(line) > 1 {
-			row := make([]Cell, 0)
-			for _, s := range re.FindAllString(line, -1) {
-				i, _ := strconv.Atoi(s)
-				row = append(row, Cell{i, false})
-			}
-			if currBoard == nil {
-				currBoard = make(Board, 0)
-			}
-			currBoard = append(currBoard, row)
-		} else {
-			boards = append(boards, currBoard)
-			currBoard = nil
+		if line != "" {
+			lines = append(lines, line)
 		}
 	}
-	boards = append(boards, currBoard)
+
+	// spit lines into boards
+	boards := funk.Map(funk.Chunk(lines, 5), func(lines []string) Board {
+		return funk.Map(lines, func(line string) []Cell {
+			return funk.Map(re.FindAllString(line, -1), func(s string) Cell {
+				i, _ := strconv.Atoi(s)
+				return Cell{i, false}
+			}).([]Cell)
+		}).(Board)
+	}).([]Board)
+
 	return draws, boards
 }
 
+// PrintScore calculates and prints the score of board
 func PrintScore(board Board, num int) {
 	var sum = 0
 	for x := 0; x < len(board); x++ {
@@ -68,30 +70,19 @@ func PrintScore(board Board, num int) {
 	fmt.Printf("Score: %d\n", sum*num)
 }
 
+// CheckBingo check if bingo
 func CheckBingo(board Board, x, y int) bool {
-	// check if bingo
 	// row first
-	var allMarked = true
-	for i := 0; i < len(board); i++ {
-		if !board[x][i].marked {
-			allMarked = false
-			break
-		}
-	}
-
-	if allMarked {
+	if r := funk.Find(board[x], func(c Cell) bool {
+		return !c.marked
+	}); r == nil {
 		return true
 	}
 
 	// column
-	allMarked = true
-	for i := 0; i < len(board); i++ {
-		if !board[i][y].marked {
-			allMarked = false
-			break
-		}
-	}
-	if allMarked {
+	if r := funk.Find(board, func(row []Cell) bool {
+		return !row[y].marked
+	}); r == nil {
 		return true
 	}
 	return false
