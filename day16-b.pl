@@ -89,10 +89,10 @@ my ($first) = Steam->new(buff => \$bin_input)->read_all(sub {
     my ($op, @subs) = @_;
 
     my %ops = (
-        0 => sub {sum0 @_},
-        1 => sub {product @_},
-        2 => sub {min @_},
-        3 => sub {max @_},
+        0 => \&sum0,
+        1 => \&product,
+        2 => \&min,
+        3 => \&max,
         5 => sub {$_[0] > $_[1] ? 1 : 0},
         6 => sub {$_[0] < $_[1] ? 1 : 0},
         7 => sub {$_[0] == $_[1] ? 1 : 0},
